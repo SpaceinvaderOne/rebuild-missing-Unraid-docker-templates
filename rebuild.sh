@@ -104,7 +104,7 @@ check_orphaned_containers() {
 # MAIN FUNCTION: FETCH APPFEED TEMPLATES
 # ------------------------------------------
 
-# Function to download the Community Applications feed
+# download the Community Applications feed
 fetch_application_feed() {
   curl -o "$feed_file" "$feed_url"
 }
@@ -213,7 +213,6 @@ refine_blacklist() {
 generate_xml_template() {
   local config_file="$1"
   local container_name="$2"
-  
   local blacklist=("${blacklistfull[@]}")
   local repository registry support project overview webui template_url icon shell privileged donate_text donate_link
   repository=$(jq -r '.[0].Config.Image' "$config_file" || echo "")
@@ -258,29 +257,38 @@ generate_xml_template() {
   xml_content+="  <DonateLink>${donate_link}</DonateLink>\n"
   xml_content+="  <Requires/>\n"
 
-  # read the json config for paths ports vars and devices
-  local paths ports env_vars devices
+# read the json config for paths, ports, variables, devices, and labels
+local paths ports env_vars devices labels
 
-  # host port mode
+  # ports
   ports=$(jq -r '
     .[0].HostConfig.PortBindings // {} 
     | to_entries[] 
     | "<Config Name=\"Port: " + (.key | split("/")[0]) + "\" Target=\"" + (.key | split("/")[0]) + "\" Default=\"" + (.value[0].HostPort) + "\" Mode=\"" + (.key | split("/")[1]) + "\" Description=\"\" Type=\"Port\" Display=\"always\" Required=\"false\" Mask=\"false\">" + (.value[0].HostPort) + "</Config>"' "$config_file")
 
-  # apped path (bind mounts)
-  paths=$(jq -r '.[] | .Mounts?[]? | select(.Type == "bind") | "<Config Name=\"" + (.Source | split("/")[-1]) + " path\" Target=\"" + .Destination + "\" Default=\"" + .Destination + "\" Mode=\"" + .Mode + "\" Description=\"\" Type=\"Path\" Display=\"always\" Required=\"false\" Mask=\"false\"/>"' "$config_file")
+   # Paths 
+  paths=$(jq -r '.[] | .Mounts?[]? | select(.Type == "bind") | "<Config Name=\"" + (.Source | split("/")[-1]) + " path\" Target=\"" + .Destination + "\" Default=\"" + .Destination + "\" Mode=\"" + .Mode + "\" Description=\"\" Type=\"Path\" Display=\"always\" Required=\"false\" Mask=\"false\">" + .Source + "</Config>"' "$config_file")
 
-  # variables code (but excluding blacklisted vars)
+  # variables  (but excluding blacklisted vars)
   env_vars=$(jq -r '.[] | .Config?.Env[]? | select(test("=")) | split("=") | if .[0] | IN($blacklist[]) | not then "<Config Name=\"" + .[0] + "\" Target=\"" + .[0] + "\" Default=\"" + .[1] + "\" Mode=\"\" Description=\"\" Type=\"Variable\" Display=\"always\" Required=\"false\" Mask=\"false\"/>" else empty end' --argjson blacklist "$(printf '%s\n' "${blacklist[@]}" | jq -R . | jq -s .)" "$config_file")
 
-  # devices code
+  # devices 
   devices=$(jq -r '.[] | .HostConfig?.Devices[]? | "<Config Name=\"" + (.PathOnHost | split("/")[-1]) + "\" Target=\"" + .PathInContainer + "\" Default=\"" + .PathOnHost + "\" Mode=\"\" Description=\"\" Type=\"Device\" Display=\"always\" Required=\"false\" Mask=\"false\"/>"' "$config_file")
 
-  # add the config to the xml (paths ports vars and devices)
+  # labels
+labels=$(jq -r '
+    .[0].Config.Labels // {} 
+    | to_entries[]
+    | select(.key | test("^(net\\.unraid\\.docker|org\\.opencontainers\\.image|maintainer|build_version)"; "i") | not)
+    | "<Config Name=\"" + (.key | gsub("_"; " ") | gsub("\\."; " ") | ascii_upcase) + "\" Target=\"" + .key + "\" Default=\"\" Mode=\"\" Description=\"\" Type=\"Label\" Display=\"always\" Required=\"false\" Mask=\"false\">" + .value + "</Config>"
+    ' "$config_file")
+  
+  # add paths, ports, environment variables, devices, and labels to the xml
   xml_content+="${paths}\n"
   xml_content+="${ports}\n"
   xml_content+="${env_vars}\n"
   xml_content+="${devices}\n"
+  xml_content+="${labels}\n"
 
   # close xml structure
   xml_content+="</Container>\n"
