@@ -16,7 +16,7 @@ template_dir="/tmp/docker-template-restore"
 mkdir -p "$template_dir"
 
 # xmlstarlet compiled url
-xmlstarlet_unraid="https://github.com/SpaceinvaderOne/rebuild-missing-Unraid-docker-templates/raw/refs/heads/main/xmlstarlet/xmlstarlet-1.6.1-x86_64.tgz"
+xmlstarlet_unraid="https://github.com/SpaceinvaderOne/rebuild-missing-Unraid-docker-templates/raw/refs/heads/main/packages/dependencies/xmlstarlet-1.6.1-x86_64.tgz"
 
 # ca appfeed url
 feed_url="https://assets.ca.unraid.net/feed/applicationFeed.json"
