@@ -1,0 +1,167 @@
+<?xml version='1.0' standalone='yes'?>
+<!DOCTYPE PLUGIN [
+<!ENTITY name                 "docker.template.rebuild">
+<!ENTITY author               "Sme">
+<!ENTITY plugin_version       "2024.11.01">
+<!ENTITY launch               "Settings/rebuild">
+<!ENTITY plugdir              "/usr/local/emhttp/plugins/&name;">
+<!ENTITY main_plugin          "https://github.com/SpaceinvaderOne/rebuild-missing-Unraid-docker-templates/raw/refs/heads/main/packages/pluginmain/docker.template.rebuild-2024.11.01-x86_64.txz">
+<!ENTITY main_md5             "f791dfedc1c1d2082c316bb5ef3f57c4">
+<!ENTITY dependency_1_name    "xmlstarlet">
+<!ENTITY dependency_1_version "1.6.1">
+<!ENTITY dependency_1_min     "1.6.1">
+<!ENTITY dependency_1         "https://github.com/SpaceinvaderOne/rebuild-missing-Unraid-docker-templates/raw/refs/heads/main/packages/dependencies/xmlstarlet-1.6.1-x86_64.tgz">
+<!ENTITY dependency_1_md5     "8ecda32dbf900283b9a656e84ef54cd7">
+]>
+
+<PLUGIN name="&name;" author="&author;" version="&plugin_version;" min="6.9.0" launch="&launch;" icon="gears">
+
+<CHANGES>
+###2024.11.01
+- Initial release of docker.template.rebuild plugin
+</CHANGES>
+
+
+
+<!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx    COMPATIBILITY CHECK START     xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-->
+<FILE Run="/usr/bin/php">
+<INLINE>
+<?
+  $version = parse_ini_file("/etc/unraid-version");
+  if (version_compare($version['version'], "6.9.0", "<")) {
+    echo "********************************************************************\n";
+    echo "This Plugin requires Unraid version 6.9.0 or greater.\n";
+    echo "********************************************************************\n";
+    exit(1);
+  }
+?>
+</INLINE>
+</FILE>
+<!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx    COMPATIBILITY CHECK END     xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-->
+
+<!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx      DEPENDENCY 1 START       xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-->
+<!-- Remove old install files for dependency 1 -->
+<FILE Run="/bin/bash">
+<INLINE>
+if [[ -e /boot/config/plugins/&name;/&dependency_1_name;-&dependency_1_version;-x86_64.tgz ]]; then
+  MD5=$(md5sum /boot/config/plugins/&name;/&dependency_1_name;-&dependency_1_version;-x86_64.tgz 2>/dev/null | grep -Po '^\S+')
+  if [[ $MD5 != &dependency_1_md5; ]]; then
+    echo "MD5 mismatch for &dependency_1_name;. Removing old version."
+    rm -f /boot/config/plugins/&name;/&dependency_1_name;-&dependency_1_version;-x86_64.tgz
+  fi
+fi
+</INLINE>
+</FILE>
+
+<!-- Check and Install the dependency_1 package only if needed -->
+<FILE Run="/bin/bash">
+<INLINE>
+
+REQUIRED_VERSION=&dependency_1_min;
+DEPENDENCY_PATH="/boot/config/plugins/&name;/&dependency_1_name;-&dependency_1_version;-x86_64.tgz"
+
+# Function to compare version numbers
+version_ge() { [[ "$1" == "$(echo -e "$1\n$2" | sort -V | tail -n 1)" ]]; }
+
+# Check if dependency_1 is installed and get its version
+if command -v &dependency_1_name; &> /dev/null; then
+  INSTALLED_VERSION=$(&dependency_1_name; --version 2>/dev/null | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+')
+fi
+
+# If dependency_1 is installed but the version is lower than required, remove it
+if [[ -n "$INSTALLED_VERSION" && ! $(version_ge "$INSTALLED_VERSION" "$REQUIRED_VERSION") ]]; then
+  echo "An outdated version of &dependency_1_name; ($INSTALLED_VERSION) is installed. Removing it."
+  removepkg &dependency_1_name;
+fi
+
+# After uninstalling the outdated version, or if not installed, proceed with installation if version is still missing or outdated
+if [[ -z "$INSTALLED_VERSION" || ! $(version_ge "$INSTALLED_VERSION" "$REQUIRED_VERSION") ]]; then
+  echo "Dependency &dependency_1_name; is missing or outdated. Preparing to install version $REQUIRED_VERSION."
+
+  # Check the MD5 of the .txz file if it exists, and remove if outdated
+  if [[ -e "$DEPENDENCY_PATH" ]]; then
+    MD5=$(md5sum "$DEPENDENCY_PATH" 2>/dev/null | grep -Po '^\S+')
+    if [[ $MD5 != &dependency_1_md5; ]]; then
+      echo "Outdated dependency file detected. Removing old version."
+      rm -f "$DEPENDENCY_PATH"
+    fi
+  fi
+
+  # Download the correct version if the .txz file is missing
+  if [[ ! -e "$DEPENDENCY_PATH" ]]; then
+    echo "Downloading updated dependency package."
+    wget -O "$DEPENDENCY_PATH" &dependency_1;
+  fi
+
+  # Install the dependency package
+  installpkg "$DEPENDENCY_PATH"
+else
+  echo "Dependency &dependency_1_name; version $INSTALLED_VERSION is already installed; skipping installation."
+fi
+</INLINE>
+</FILE>
+<!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx    DEPENDENCY 1 END    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-->
+
+<!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx    MAIN PLUGIN START   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-->
+<FILE Run="/bin/bash">
+<INLINE>
+MD5=$(md5sum &plugdir;/&name;-&plugin_version;-x86_64.txz 2>/dev/null | grep -Po '^\S+')
+if [[ $MD5 != &main_md5; ]]; then
+  rm -f &plugdir;/&name;-&plugin_version;-x86_64.txz
+fi
+</INLINE>
+</FILE>
+
+<FILE Name="&plugdir;/&name;-&plugin_version;-x86_64.txz" Run="upgradepkg --install-new">
+  <URL>&main_plugin;</URL>
+  <MD5>&main_md5;</MD5>
+</FILE>
+<!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx    MAIN PLUGIN END   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-->
+
+<!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxX     POST INSTALL START    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-->
+<FILE Run="/bin/bash">
+<INLINE>
+chmod +x &plugdir;/scripts/*.sh
+echo ""
+echo "----------------------------------------------------"
+echo " &name; by &author;"
+echo " Version: &plugin_version;"
+echo " Has been installed"
+echo "----------------------------------------------------"
+echo ""
+</INLINE>
+</FILE>
+<!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxX      POST INSTALL END     xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-->
+
+<!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxX      UNINSTALL START      xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-->
+<FILE Run="/bin/bash" Method="remove">
+<INLINE>
+# Uninstall the main plugin package
+removepkg &name;
+
+# Check if the dependency is installed and, if so, remove it
+if [[ -e /boot/config/plugins/&name;/&dependency_1_name;-&dependency_1_version;-x86_64.tgz ]]; then
+  echo "Removing dependency &dependency_1_name; version &dependency_1_version;"
+  removepkg &dependency_1_name;
+fi
+
+# Remove the main plugin directory and all related files/subdirectories
+rm -rf &plugdir;
+
+echo ""
+echo "----------------------------------------------------"
+echo " &name; by &author;"
+echo " Version: &plugin_version;"
+echo " Has been removed"
+echo "----------------------------------------------------"
+echo ""
+</INLINE>
+</FILE>
+<!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxX      UNINSTALL END      xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-->
+
+<page>
+  <link>&name;</link>
+  <menu>Settings</menu>
+</page>
+
+</PLUGIN>
