@@ -15,8 +15,6 @@ xml_location="/boot/config/plugins/dockerMan/templates-user"
 template_dir="/tmp/docker-template-restore"
 mkdir -p "$template_dir"
 
-# xmlstarlet compiled url
-xmlstarlet_unraid="https://github.com/SpaceinvaderOne/rebuild-missing-Unraid-docker-templates/raw/refs/heads/main/packages/dependencies/xmlstarlet-1.6.1-x86_64.tgz"
 
 # ca appfeed url
 feed_url="https://assets.ca.unraid.net/feed/applicationFeed.json"
@@ -39,36 +37,7 @@ declare -a blacklistfull=(
   "SPARK_HOME" "SSL_CERT_FILE" "TERM" "TUNARR_BIND_ADDR" "TZ" "USER" "VIRTUAL_ENV"
   "XDG_CACHE_HOME"
 )
-# ------------------------------------------
-# Check for and install xmlstarlet
-# ------------------------------------------
-install_xmlstarlet() {
-  # see if xmlstarlet is installed on the server
-  if command -v xmlstarlet >/dev/null 2>&1; then
-    echo "xmlstarlet is instaled...continuing"
-  else
-    echo "xmlstarlet not found. Installing..."
 
-    # create the directory if not present
-    mkdir -p "$template_dir"
-
-    # download unraid compliled xmlstarlet
-    echo "Downloading xmlstarlet package from $xmlstarlet_unraid..."
-    curl -L "$xmlstarlet_unraid" -o "$template_dir/xmlstarlet.tgz"
-
-    # install the package
-    echo "Installing xmlstarlet using installpkg..."
-    installpkg "$template_dir/xmlstarlet.tgz"
-
-    # check it installed correctly
-    if command -v xmlstarlet >/dev/null 2>&1; then
-      echo "xmlstarlet successfully installed...continuing"
-    else
-      echo "xmlstarlet installation failed. Exiting script."
-      exit 1  # exit wif installation fails
-    fi
-  fi
-}
 # ------------------------------------------
 # MAIN FUNCTION CHECK ORPHANED CONTAINERS
 # ------------------------------------------
@@ -329,8 +298,7 @@ cleanup_template_dir() {
 # Run the main functions
 # ------------------------
 
-# install xmlstarlet if not already present
-install_xmlstarlet
+
 
 # check if the containers have an unraid xml if orpaned is set
 containers_to_process=($(check_orphaned_containers))

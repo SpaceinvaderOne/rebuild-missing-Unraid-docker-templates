@@ -1,0 +1,19 @@
+Menu="Docker Rebuild & Inspect.Main:2"
+Title="Rebuild"
+---
+<div class="section">
+  <h2>Docker Rebuild & Inspect - Rebuild Tab</h2>
+  <p>This is the Rebuild tab, where you can initiate a rebuild of Docker templates or configurations.</p>
+  <button onclick="runRebuild()">Run Rebuild</button>
+  <p id="outputRebuild"></p> <!-- Place to display output -->
+</div>
+
+<script>
+  function runRebuild() {
+    $.post('/plugins/docker.rebuild.inspect/scripts/rebuild_script.php', {}, function(data) {
+      $('#outputRebuild').html(data.replace(/\n/g, '<br>'));
+    }).fail(function() {
+      $('#outputRebuild').html('Error executing rebuild.');
+    });
+  }
+</script>

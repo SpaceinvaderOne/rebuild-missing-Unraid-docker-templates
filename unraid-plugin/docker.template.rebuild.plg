@@ -1,17 +1,12 @@
 <?xml version='1.0' standalone='yes'?>
 <!DOCTYPE PLUGIN [
 <!ENTITY name                 "docker.template.rebuild">
-<!ENTITY author               "Sme">
 <!ENTITY plugin_version       "2024.11.01">
+<!ENTITY main_plugin          "https://github.com/spaceinvaderone/rebuild-missing-Unraid-docker-templates/raw/refs/heads/main/packages/pluginmain/docker.template.rebuild-2024.11.01-x86_64.txz">
+<!ENTITY plugin_md5           "237761f7e98b77a960e4fd079708133b">
+<!ENTITY plugdir              "/boot/config/plugins/&name;">
 <!ENTITY launch               "Settings/rebuild">
-<!ENTITY plugdir              "/usr/local/emhttp/plugins/&name;">
-<!ENTITY main_plugin          "https://github.com/SpaceinvaderOne/rebuild-missing-Unraid-docker-templates/raw/refs/heads/main/packages/pluginmain/docker.template.rebuild-2024.11.01-x86_64.txz">
-<!ENTITY main_md5             "f791dfedc1c1d2082c316bb5ef3f57c4">
-<!ENTITY dependency_1_name    "xmlstarlet">
-<!ENTITY dependency_1_version "1.6.1">
-<!ENTITY dependency_1_min     "1.6.1">
-<!ENTITY dependency_1         "https://github.com/SpaceinvaderOne/rebuild-missing-Unraid-docker-templates/raw/refs/heads/main/packages/dependencies/xmlstarlet-1.6.1-x86_64.tgz">
-<!ENTITY dependency_1_md5     "8ecda32dbf900283b9a656e84ef54cd7">
+<!ENTITY author               "SpaceInvaderOne">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&plugin_version;" min="6.9.0" launch="&launch;" icon="gears">
@@ -21,12 +16,10 @@
 - Initial release of docker.template.rebuild plugin
 </CHANGES>
 
-
-
 <!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx    COMPATIBILITY CHECK START     xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-->
 <FILE Run="/usr/bin/php">
-<INLINE>
-<?
+<INLINE><![CDATA[
+<?php
   $version = parse_ini_file("/etc/unraid-version");
   if (version_compare($version['version'], "6.9.0", "<")) {
     echo "********************************************************************\n";
@@ -35,133 +28,164 @@
     exit(1);
   }
 ?>
-</INLINE>
+]]></INLINE>
 </FILE>
 <!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx    COMPATIBILITY CHECK END     xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-->
 
-<!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx      DEPENDENCY 1 START       xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-->
-<!-- Remove old install files for dependency 1 -->
+<!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx    MAIN PLUGIN START   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-->
+<!-- REMOVE OLD -->
 <FILE Run="/bin/bash">
-<INLINE>
-if [[ -e /boot/config/plugins/&name;/&dependency_1_name;-&dependency_1_version;-x86_64.tgz ]]; then
-  MD5=$(md5sum /boot/config/plugins/&name;/&dependency_1_name;-&dependency_1_version;-x86_64.tgz 2>/dev/null | grep -Po '^\S+')
-  if [[ $MD5 != &dependency_1_md5; ]]; then
-    echo "MD5 mismatch for &dependency_1_name;. Removing old version."
-    rm -f /boot/config/plugins/&name;/&dependency_1_name;-&dependency_1_version;-x86_64.tgz
-  fi
-fi
-</INLINE>
-</FILE>
+<INLINE><![CDATA[
+# ---------------------------------------------------
+PLUGIN_NAME="docker.template.rebuild"
+PLUGIN_MD5="237761f7e98b77a960e4fd079708133b"
+# ---------------------------------------------------
+LOCAL_PATH="/boot/config/plugins/$PLUGIN_NAME"
 
-<!-- Check and Install the dependency_1 package only if needed -->
-<FILE Run="/bin/bash">
-<INLINE>
-
-REQUIRED_VERSION=&dependency_1_min;
-DEPENDENCY_PATH="/boot/config/plugins/&name;/&dependency_1_name;-&dependency_1_version;-x86_64.tgz"
-
-# Function to compare version numbers
-version_ge() { [[ "$1" == "$(echo -e "$1\n$2" | sort -V | tail -n 1)" ]]; }
-
-# Check if dependency_1 is installed and get its version
-if command -v &dependency_1_name; &> /dev/null; then
-  INSTALLED_VERSION=$(&dependency_1_name; --version 2>/dev/null | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+')
-fi
-
-# If dependency_1 is installed but the version is lower than required, remove it
-if [[ -n "$INSTALLED_VERSION" && ! $(version_ge "$INSTALLED_VERSION" "$REQUIRED_VERSION") ]]; then
-  echo "An outdated version of &dependency_1_name; ($INSTALLED_VERSION) is installed. Removing it."
-  removepkg &dependency_1_name;
-fi
-
-# After uninstalling the outdated version, or if not installed, proceed with installation if version is still missing or outdated
-if [[ -z "$INSTALLED_VERSION" || ! $(version_ge "$INSTALLED_VERSION" "$REQUIRED_VERSION") ]]; then
-  echo "Dependency &dependency_1_name; is missing or outdated. Preparing to install version $REQUIRED_VERSION."
-
-  # Check the MD5 of the .txz file if it exists, and remove if outdated
-  if [[ -e "$DEPENDENCY_PATH" ]]; then
-    MD5=$(md5sum "$DEPENDENCY_PATH" 2>/dev/null | grep -Po '^\S+')
-    if [[ $MD5 != &dependency_1_md5; ]]; then
-      echo "Outdated dependency file detected. Removing old version."
-      rm -f "$DEPENDENCY_PATH"
+# look for old plugin files by checking md5
+for FILE in "$LOCAL_PATH/${PLUGIN_NAME}"*; do
+  if [[ -f "$FILE" ]]; then
+    echo "Checking file $FILE"
+    MD5=$(md5sum "$FILE" 2>/dev/null | grep -Po '^\S+')
+    
+    if [[ "$MD5" != "$PLUGIN_MD5" ]]; then
+      echo " $FILE does not match MD5 checksum. Removing old plugin file."
+      rm -f "$FILE"
+    else
+      echo " $FILE is current. Keeping this file."
     fi
   fi
-
-  # Download the correct version if the .txz file is missing
-  if [[ ! -e "$DEPENDENCY_PATH" ]]; then
-    echo "Downloading updated dependency package."
-    wget -O "$DEPENDENCY_PATH" &dependency_1;
-  fi
-
-  # Install the dependency package
-  installpkg "$DEPENDENCY_PATH"
-else
-  echo "Dependency &dependency_1_name; version $INSTALLED_VERSION is already installed; skipping installation."
-fi
-</INLINE>
+done
+]]></INLINE>
 </FILE>
-<!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx    DEPENDENCY 1 END    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-->
-
-<!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx    MAIN PLUGIN START   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-->
-<FILE Run="/bin/bash">
-<INLINE>
-MD5=$(md5sum &plugdir;/&name;-&plugin_version;-x86_64.txz 2>/dev/null | grep -Po '^\S+')
-if [[ $MD5 != &main_md5; ]]; then
-  rm -f &plugdir;/&name;-&plugin_version;-x86_64.txz
-fi
-</INLINE>
-</FILE>
-
+<!-- INSTALL -->
 <FILE Name="&plugdir;/&name;-&plugin_version;-x86_64.txz" Run="upgradepkg --install-new">
   <URL>&main_plugin;</URL>
-  <MD5>&main_md5;</MD5>
+  <MD5>&plugin_md5;</MD5>
 </FILE>
+
 <!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx    MAIN PLUGIN END   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-->
+
+<!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx   DEPENDENCY INSTALL   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-->
+
+<FILE Run="/bin/bash">
+<INLINE><![CDATA[
+# ---------------------------------------------------
+PLUGIN_NAME="docker.template.rebuild"
+DOWNLOAD_BASE_URL="https://github.com/spaceinvaderone/rebuild-missing-Unraid-docker-templates/raw/refs/heads/main/packages/dependencies"
+# arrays for dependencies
+DEPENDENCY_NAME=("xmlstarlet-1.6.1-x86_64.tgz" )
+MD5_CHECKSUM=("8ecda32dbf900283b9a656e84ef54cd7" )
+# ---------------------------------------------------
+LOCAL_PATH="/boot/config/plugins/$PLUGIN_NAME"
+echo ""
+echo "+=============================================================================="
+echo "|  Installing dependencies (if any)"
+echo "+=============================================================================="
+echo ""
+# Loop through each dependency
+for i in "${!DEPENDENCY_NAME[@]}"; do
+  DEP_FILE="${DEPENDENCY_NAME[$i]}"
+  DEP_MD5="${MD5_CHECKSUM[$i]}"
+  DEP_PATH="${LOCAL_PATH}/${DEP_FILE}"
+  DEP_URL="${DOWNLOAD_BASE_URL}/${DEP_FILE}"
+
+  # get the real dependency name for checking from its filename
+  DEP_NAME=$(echo "$DEP_FILE" | grep -oP '^[^-]+')
+
+  echo "Processing dependency  $DEP_NAME"
+
+  # is dependency is already installed ?
+  if command -v "$DEP_NAME" &>/dev/null; then
+    echo "$DEP_NAME is already installed; skipping installation."
+    continue  # go to the next dependency if installed
+  fi
+
+  # check for existing file with MD5 validation
+  for FILE in "$LOCAL_PATH/${DEP_NAME}"*.{tgz,txz}; do
+    if [[ -f "$FILE" ]]; then
+      echo "Found existing dependency file: $FILE"
+
+      # do hash check on the file
+      MD5=$(md5sum "$FILE" 2>/dev/null | grep -Po '^\S+')
+      if [[ "$MD5" != "$DEP_MD5" ]]; then
+        echo "File $FILE does not match expected MD5 checksum. Removing outdated file."
+        rm -f "$FILE"
+      else
+        echo " $FILE found matches checksum so is current."
+        DEP_PATH="$FILE"  # use this file as the dependency wont download below
+        break
+      fi
+    fi
+  done
+
+  # download only if DEP_PATH doent exist
+  if [[ ! -e "$DEP_PATH" ]]; then
+    echo "Dependency is missing or outdated."
+    echo "Downloading updated dependency package for $DEP_NAME."
+    mkdir -p "$LOCAL_PATH"
+    wget -O "$DEP_PATH" "$DEP_URL"
+  fi
+
+  # install the dependency 
+  installpkg "$DEP_PATH"
+done
+]]></INLINE>
+</FILE>
+<!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx    DEPENDENCY INSTALL END    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-->
 
 <!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxX     POST INSTALL START    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-->
 <FILE Run="/bin/bash">
 <INLINE>
 chmod +x &plugdir;/scripts/*.sh
 echo ""
-echo "----------------------------------------------------"
-echo " &name; by &author;"
-echo " Version: &plugin_version;"
-echo " Has been installed"
-echo "----------------------------------------------------"
+echo "+=============================================================================="
+echo "|  &name; v &plugin_version;"
+echo "|  by &author;"
+echo "|  Has sucessfully been installed"
+echo "+=============================================================================="
 echo ""
 </INLINE>
 </FILE>
 <!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxX      POST INSTALL END     xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-->
 
 <!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxX      UNINSTALL START      xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-->
+<!-- Uninstall Script -->
 <FILE Run="/bin/bash" Method="remove">
-<INLINE>
-# Uninstall the main plugin package
-removepkg &name;
+<INLINE><![CDATA[
+# Define variables
+PLUGIN_NAME="docker.template.rebuild"
+LOCAL_PATH="/boot/config/plugins/$PLUGIN_NAME"
 
-# Check if the dependency is installed and, if so, remove it
-if [[ -e /boot/config/plugins/&name;/&dependency_1_name;-&dependency_1_version;-x86_64.tgz ]]; then
-  echo "Removing dependency &dependency_1_name; version &dependency_1_version;"
-  removepkg &dependency_1_name;
-fi
+echo "Starting uninstallation of $PLUGIN_NAME and its dependencies..."
+
+# Loop through all files in LOCAL_PATH, uninstalling each package
+for FILE in "$LOCAL_PATH"/*.t{g,x}z; do
+  if [[ -f "$FILE" ]]; then
+    # Remove the extension to get the full package name
+    PACKAGE_NAME=$(basename "$FILE" .tgz)
+    PACKAGE_NAME=$(basename "$PACKAGE_NAME" .txz)
+
+    echo "Uninstalling package: $PACKAGE_NAME"
+    removepkg "$PACKAGE_NAME"
+
+    echo "Package $PACKAGE_NAME has been uninstalled."
+  fi
+done
 
 # Remove the main plugin directory and all related files/subdirectories
-rm -rf &plugdir;
-
+rm -rf /usr/local/emhttp/plugins/$PLUGIN_NAME
+rm -rf "$LOCAL_PATH"
 echo ""
-echo "----------------------------------------------------"
-echo " &name; by &author;"
-echo " Version: &plugin_version;"
-echo " Has been removed"
-echo "----------------------------------------------------"
+echo "+=============================================================================="
+echo "|  $PLUGIN_NAME" and any dependencies
+echo "|  have sucessfully been removed"
+echo "+=============================================================================="
 echo ""
-</INLINE>
+]]></INLINE>
 </FILE>
 <!-- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxX      UNINSTALL END      xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-->
 
-<page>
-  <link>&name;</link>
-  <menu>Settings</menu>
-</page>
+
 
 </PLUGIN>

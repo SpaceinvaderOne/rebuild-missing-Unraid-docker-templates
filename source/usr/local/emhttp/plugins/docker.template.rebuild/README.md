@@ -1,0 +1,3 @@
+### Docker Rebuild & Inspect ###
+Rebuild - Automatically rebuilds Docker templates from running containers allowing you to edit the containers again. Useful if your flashdrive failed and you have no backup. 
+inspect -  Displays full container properties (ports, paths, variables, labels) of all running containers, including hidden settings not in the template, for easy management and troubleshooting.

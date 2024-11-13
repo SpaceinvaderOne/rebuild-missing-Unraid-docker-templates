@@ -1,0 +1,7 @@
+Menu="Utilities"
+Type="xmenu"
+Title="Docker Rebuild & Inspect"
+Tabs="true"
+Icon="/usr/local/emhttp/plugins/docker.template.rebuild/images/plugin_docker_rebuild.png"
+Tag="custom-icon"
+---

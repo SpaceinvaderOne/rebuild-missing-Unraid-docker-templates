@@ -1,0 +1,19 @@
+Menu="Docker Rebuild & Inspect.Main:1"
+Title="Inspect"
+---
+<div class="section">
+  <h2>Docker Rebuild & Inspect - Inspect Tab</h2>
+  <p>This is the Inspect tab, where you can review Docker configurations or details.</p>
+  <button onclick="runInspect()">Run Inspect</button>
+  <p id="outputInspect"></p> <!-- Place to display output -->
+</div>
+
+<script>
+  function runInspect() {
+    $.post('/plugins/docker.rebuild.inspect/scripts/inspect_script.php', {}, function(data) {
+      $('#outputInspect').html(data.replace(/\n/g, '<br>'));
+    }).fail(function() {
+      $('#outputInspect').html('Error executing inspect.');
+    });
+  }
+</script>
