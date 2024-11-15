@@ -22,6 +22,7 @@ source_dir="./source/usr"
 output_dir="./packages/pluginmain"
 archive_dir="./packages/archive"
 dependencies_dir="./packages/dependencies"
+plugin_dir="./unraid-plugin"
 
 # Ensure the necessary directories exist
 mkdir -p "$output_dir" "$archive_dir" "$dependencies_dir"
@@ -56,5 +57,15 @@ for file in "$dependencies_dir"/*.txz "$dependencies_dir"/*.tgz; do
         echo "Created MD5 checksum file: ${base_name}_md5.txt in ${dependencies_dir}"
     fi
 done
+
+# Update the .plg file's plugin_version line with the current date
+plg_file="${plugin_dir}/${plugin_name}.plg"
+if [ -f "$plg_file" ]; then
+    # Use sed to replace the line with the updated date
+    sed -i '' "s|<!ENTITY plugin_version.*|<!ENTITY plugin_version       \"${current_date}\">|" "$plg_file"
+    echo "Updated plugin version in ${plg_file} to ${current_date}"
+else
+    echo "Error: .plg file ${plg_file} not found."
+fi
 
 echo "Packaging and checksum generation complete."

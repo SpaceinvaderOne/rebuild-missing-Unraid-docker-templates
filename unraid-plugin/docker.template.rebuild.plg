@@ -1,9 +1,9 @@
 <?xml version='1.0' standalone='yes'?>
 <!DOCTYPE PLUGIN [
 <!ENTITY name                 "docker.template.rebuild">
-<!ENTITY plugin_version       "2024.11.01">
+<!ENTITY plugin_version       "2024.11.15">
 <!ENTITY main_plugin          "https://github.com/spaceinvaderone/rebuild-missing-Unraid-docker-templates/raw/refs/heads/main/packages/pluginmain/docker.template.rebuild-2024.11.01-x86_64.txz">
-<!ENTITY plugin_md5           "237761f7e98b77a960e4fd079708133b">
+<!ENTITY plugin_md5           "f47c9953463d29f2af52faa7b7d30b93">
 <!ENTITY plugdir              "/boot/config/plugins/&name;">
 <!ENTITY launch               "Settings/rebuild">
 <!ENTITY author               "SpaceInvaderOne">
@@ -38,7 +38,7 @@
 <INLINE><![CDATA[
 # ---------------------------------------------------
 PLUGIN_NAME="docker.template.rebuild"
-PLUGIN_MD5="237761f7e98b77a960e4fd079708133b"
+PLUGIN_MD5="f47c9953463d29f2af52faa7b7d30b93"
 # ---------------------------------------------------
 LOCAL_PATH="/boot/config/plugins/$PLUGIN_NAME"
 

@@ -1,16 +1,59 @@
-Menu="Docker Rebuild & Inspect.Main:2"
-Title="Rebuild"
+Menu="rebuild:2"
+Title="Rebuild Missing Templates"
 ---
 <div class="section">
-  <h2>Docker Rebuild & Inspect - Rebuild Tab</h2>
-  <p>This is the Rebuild tab, where you can initiate a rebuild of Docker templates or configurations.</p>
+  <h2>Rebuild Docker Templates</h2>
+  <p>This section rebuilds missing Docker templates by analysing running containers.</p>
+  <p>The <strong>Rebuild Missing Templates</strong> function will restore templates directly to the flash drive or to a user-specified location for manual recovery. Ensure the containers to be processed are running before using this tool.</p>
+
+  <br> 
+</div>
+  
+  <p><strong>Auto (Default):</strong> Selecting “Auto” will scan for any running containers that lack templates. If any are found, templates will be automatically created and placed in the appropriate location.</p>
+  <p><strong>Manual:</strong> The “Manual” option scans all running containers and creates templates for them, regardless of whether they already have templates saved on the flash drive. These templates will be placed in the location specified below, allowing you to review them manually.</p>
+
+
+  <label for="checkOrphaned"><strong>Auto Process -</strong></label>
+  <select id="checkOrphaned" name="checkOrphaned" onchange="toggleTemplateDir()">
+    <option value="yes">Auto</option>
+    <option value="no">Manual</option>
+  </select><br><br>
+
+
+  <div id="templateDirSection" style="display: none;">
+    <label for="templateDir"><strong>Template Destination</strong></label>
+    <input type="text" class="ftAttach" id="templateDir" name="templateDir"
+           value="/tmp/docker-template-restore"
+           data-pickfilter="HIDE_FILES_FILTER" data-pickfolders="true"><br><br>
+  </div>
+
+
   <button onclick="runRebuild()">Run Rebuild</button>
   <p id="outputRebuild"></p> <!-- Place to display output -->
 </div>
 
 <script>
+  // Toggle the visibility of the Template Destination section
+  function toggleTemplateDir() {
+    const autoProcess = document.getElementById('checkOrphaned').value;
+    const templateDirSection = document.getElementById('templateDirSection');
+    if (autoProcess === 'no') {
+      templateDirSection.style.display = 'block'; // Show if Manual is selected
+    } else {
+      templateDirSection.style.display = 'none'; // Hide if Auto is selected
+    }
+  }
+
   function runRebuild() {
-    $.post('/plugins/docker.rebuild.inspect/scripts/rebuild_script.php', {}, function(data) {
+    // Get values from dropdown and picker
+    const checkOrphaned = $('#checkOrphaned').val();
+    const templateDir = $('#templateDir').val();
+
+    // Send values to PHP script
+    $.post('/plugins/docker.template.rebuild/scripts/rebuild_script.php', {
+      checkOrphaned: checkOrphaned,
+      templateDir: templateDir
+    }, function(data) {
       $('#outputRebuild').html(data.replace(/\n/g, '<br>'));
     }).fail(function() {
       $('#outputRebuild').html('Error executing rebuild.');

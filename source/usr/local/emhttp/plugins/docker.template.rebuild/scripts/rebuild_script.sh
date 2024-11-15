@@ -8,11 +8,12 @@
 # VARIABLES USED
 # ------------------------
 
-check_orphaned="yes"  # defualt set to yes then only prcesses containers without Unraid xml moving them at end. No processes all and leaves them in working dir
-xml_location="/boot/config/plugins/dockerMan/templates-user"
+# Use passed arguments or defaults
+template_dir="${1:-/tmp/docker-template-restore}"
+check_orphaned="${2:-yes}"
 
-# working directory (in ram)
-template_dir="/tmp/docker-template-restore"
+# Rest of the script continues here...
+xml_location="/boot/config/plugins/dockerMan/templates-user"
 mkdir -p "$template_dir"
 
 
@@ -291,6 +292,13 @@ cleanup_template_dir() {
   if [[ "$check_orphaned" == "yes" ]]; then
     rm -r "$template_dir"
     echo "Cleaned up $template_dir after moving XML files"
+  else
+    for file in "$template_dir"/*; do
+      if [[ ! "$(basename "$file")" =~ ^my- ]]; then
+        rm "$file"
+        echo "Deleted $file"
+      fi
+    done
   fi
 }
 
